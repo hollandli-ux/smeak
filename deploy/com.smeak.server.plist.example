@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>com.smeak.server</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/PATH/TO/Smeak/.venv/bin/python</string>
+        <string>/PATH/TO/Smeak/server.py</string>
+    </array>
+    <key>WorkingDirectory</key><string>/PATH/TO/Smeak</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HTTPS_PROXY</key><string>http://127.0.0.1:7897</string>
+        <key>HTTP_PROXY</key><string>http://127.0.0.1:7897</string>
+    </dict>
+    <key>RunAtLoad</key><true/>
+    <key>KeepAlive</key><true/>
+    <key>StandardOutPath</key><string>/PATH/TO/Smeak/server.log</string>
+    <key>StandardErrorPath</key><string>/PATH/TO/Smeak/server.err.log</string>
+</dict>
+</plist>

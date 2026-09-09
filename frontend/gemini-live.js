@@ -1,8 +1,3 @@
-/* gemini-live.js — Gemini Live API 浏览器客户端（精简自 Google 官方示例）
- * 两种连接方式：
- *  1) 临时令牌（推荐，Key 在服务端）：token 模式 → v1alpha Constrained 端点
- *  2) 直接 API Key（仅本机自用）：apiKey 模式 → v1beta 端点
- */
 const LIVE_RESP = {
   TEXT: "TEXT",
   AUDIO: "AUDIO",
@@ -62,7 +57,6 @@ function parseLiveMessage(data) {
     if (serverContent?.turnComplete) {
       responses.push({ type: LIVE_RESP.TURN_COMPLETE, data: "", endOfTurn: true });
     }
-    // 语音活动检测（用于统计你的发言次数 / 占位气泡）
     if (data?.voiceActivity) {
       if (data.voiceActivity.type === "ACTIVITY_START") {
         responses.push({ type: LIVE_RESP.SPEECH_START, data: "", endOfTurn: false });
@@ -76,7 +70,6 @@ function parseLiveMessage(data) {
     if (data?.goAway) {
       responses.push({ type: LIVE_RESP.GOAWAY, data: JSON.stringify(data.goAway), endOfTurn: false });
     }
-    // 只在真正无法识别的消息时记 RAW（过滤掉续传/空内容等正常噪声）
     const ignorable =
       data?.sessionResumptionUpdate ||
       data?.generationComplete ||
@@ -143,7 +136,6 @@ class GeminiLiveClient {
 
   _sendSetup() {
     if (this.proxyUrl) {
-      // 中转模式：让后端建立 Gemini 会话，本端只发送会话配置
       this._send(JSON.stringify({
         kind: "start",
         config: {
@@ -198,5 +190,5 @@ class GeminiLiveClient {
 
   _send(s) { if (this.ws && this.ws.readyState === WebSocket.OPEN) this.ws.send(s); }
 
-  close() { try { if (this.ws) this.ws.close(); } catch (e) { /* noop */ } this.ws = null; }
+  close() { try { if (this.ws) this.ws.close(); } catch (e) {  } this.ws = null; }
 }

@@ -2,9 +2,9 @@
 
 /* ================= 配置 ================= */
 const MODEL = new URLSearchParams(location.search).get("model") || "gemini-3.1-flash-live-preview";
-const VOICE = "Aoede"; // 默认音色（可在首页选择）
-const MASCOT_NAME = "晚晚"; // 吉祥物名字
-const MASCOT_EMOJI = "🐱"; // 吉祥物形象：银渐层小猫
+const VOICE = "Aoede";
+const MASCOT_NAME = "晚晚";
+const MASCOT_EMOJI = "🐱";
 
 /* ================= 线性图标库（SVG） ================= */
 const ICON_PATHS = {
@@ -84,7 +84,6 @@ const SCENARIOS_POOL = [
   { id: "optician", emoji: "👓", title: "配眼镜", en: "Getting new glasses", role: "眼镜店店员", place: "眼镜店", openingEn: "Welcome! Are you looking for new glasses or an eye test?" },
   { id: "sports", emoji: "🏸", title: "约人打球", en: "Playing badminton", role: "球友", place: "周末的体育馆", openingEn: "Hey! Want to play badminton this weekend? I booked a court." },
 ];
-/* 场景分类 */
 const SCENARIO_CAT = {
   coffee: "life", restaurant: "life", phone: "life", shopping: "life", bank: "life",
   movie: "life", party: "life", roommate: "life", gym: "health",
@@ -107,7 +106,6 @@ const CATEGORIES = [
   { id: "social", label: "社交" },
 ];
 
-/* 练前预热：每个场景 2 个关键表达 [英文, 中文] */
 const WARMUPS = {
   coffee: [["I'd like a latte, please.", "我要一杯拿铁。"], ["For here or to go?", "在这儿喝还是带走？"]],
   airport: [["I'd like to check in for my flight.", "我想办理登机手续。"], ["Window or aisle seat?", "靠窗还是靠过道？"]],
@@ -158,7 +156,6 @@ const DIFFICULTIES = [
 ];
 const DURATIONS = [5, 10, 15];
 
-/* 当前分类下的场景池 */
 function scenarioPool() {
   if (S.category === "custom") return S.customScenario ? [S.customScenario] : [];
   let base = S.category === "all"
@@ -177,7 +174,6 @@ function refreshDeck() {
   S.visibleScenarios = drawN(pool, Math.min(6, pool.length));
   if (!S.visibleScenarios.some((sc) => sc.id === S.scenario.id)) S.scenario = S.visibleScenarios[0];
 }
-/* 场景池抽牌 */
 function drawN(arr, n) {
   const a = [...arr];
   const out = [];
@@ -510,7 +506,7 @@ function saveSessions(list) {
 /* ================= 对话录音：本地持久化（IndexedDB）+ 历史回听 ================= */
 const AUDIO_DB = "smeak-db";
 const AUDIO_STORE = "audio";
-const AUDIO_CAP = 90 * 1024 * 1024; // 录音总上限约 90MB，超出自动清理最旧的
+const AUDIO_CAP = 90 * 1024 * 1024;
 let audioObjUrl = null;
 let audioCurId = null;
 
@@ -570,11 +566,10 @@ async function pruneAudioDB(cap) {
       tx.oncomplete = () => { db.close(); resolve(); };
       tx.onerror = () => { db.close(); resolve(); };
     });
-  } catch (e) { /* 静默 */ }
+  } catch (e) {  }
 }
 function fmtMB(bytes) { return (bytes / (1024 * 1024)).toFixed(1) + "MB"; }
 
-/* 把一段段的回放音频(用户16k/AI 24k)拼成一条 24kHz 单声道 WAV */
 function buildSessionWavBlob(segs) {
   const SR = 24000, GAP = Math.round(SR * 0.12);
   const parts = [];
@@ -652,7 +647,7 @@ function calcStreak(list) {
   const days = new Set(list.map((x) => dayKey(new Date(x.ts))));
   let streak = 0;
   const d = new Date();
-  if (!days.has(dayKey(d))) d.setDate(d.getDate() - 1); // 今天还没练不算断
+  if (!days.has(dayKey(d))) d.setDate(d.getDate() - 1);
   while (days.has(dayKey(d))) { streak++; d.setDate(d.getDate() - 1); }
   return streak;
 }
@@ -755,7 +750,7 @@ function armSilenceWatch(delayMs) {
     S.silenceTimer = null;
     if (S.ended || S.wrapRequested || S.muted || S.silenceFired) return;
     if (!S.client || !S.client.ws || S.client.ws.readyState !== WebSocket.OPEN) return;
-    if (S.silenceGuided) return;   // 冷场引导每次会话最多一次，避免 AI 反复自说自话
+    if (S.silenceGuided) return;
     S.silenceFired = true;
     S.silenceGuided = true;
     log("检测到冷场，AI 主动引导（本次会话仅一次）");
@@ -818,7 +813,7 @@ function renderCalendar() {
       minByDay[day] = (minByDay[day] || 0) + Math.round((x.actualSecs || 0) / 60);
     }
   });
-  const firstDow = (new Date(y, m, 1).getDay() + 6) % 7; // 周一开头
+  const firstDow = (new Date(y, m, 1).getDay() + 6) % 7;
   const days = new Date(y, m + 1, 0).getDate();
   let html = "";
   ["一", "二", "三", "四", "五", "六", "日"].forEach((d) => { html += `<div class="cal-dow">${d}</div>`; });
@@ -828,7 +823,7 @@ function renderCalendar() {
     const isToday = y === today.getFullYear() && m === today.getMonth() && day === today.getDate();
     const isFuture = new Date(y, m, day) > today;
     let cls = "cal-cell";
-    if (isFuture || isToday) cls += " has"; // 今天描边高亮用
+    if (isFuture || isToday) cls += " has";
     let lvl = 0;
     if (min > 0) lvl = min < 10 ? 1 : min < 25 ? 2 : min < 45 ? 3 : 4;
     if (lvl > 0) cls += ` l${lvl}`;
@@ -1045,8 +1040,6 @@ function applyTheme(t) {
   const b = $("themeToggle");
   if (b) b.innerHTML = icon(t === "dark" ? "sun" : "moon", 19);
 }
-/* AI 专属回答期间：暂停麦克风收音，避免把 AI 自己的声音收进去造成回声打断/重叠；
-   等这一轮 AI 说完(TURN_COMPLETE)再恢复收音。 */
 function suspendMicForAi() {
   if (S.micSuspended) return;
   S.micSuspended = true;
@@ -1082,7 +1075,6 @@ function setMuted(m) {
   else if (S.captureReady) setStatus("麦克风已恢复，直接开口即可", "ready");
 }
 
-/* 后端地址：留空 = 同源（server.py 或当前页面）；填了 = 远程后端 */
 function backendBase() {
   return (localStorage.getItem("smeakBackend") || "").trim().replace(/\/+$/, "");
 }
@@ -1105,7 +1097,6 @@ async function apiPost(path, payload) {
   return fetch(url, opts);
 }
 
-/* 获取连接凭证：优先后端临时令牌，否则直连 Key */
 async function acquireCredential() {
   try {
     const resp = await apiPost("/api/token");
@@ -1255,9 +1246,6 @@ function renderSetup() {
 }
 
 /* ================= 屏幕切换 ================= */
-/* ================= 返回手势 / 系统返回导航 =================
-   维护一个“是否处于深层界面”的标记：进入对话/结束/弹层时压入一条历史，
-   系统返回(含手势)先回退历史再逐级关弹层/回首页，避免直接退出 App。 */
 const IS_NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 let navTimer = null, navIgnore = false;
 function scheduleSyncNav() {
@@ -1281,7 +1269,6 @@ function syncNav() {
   if (navDesired() && !navHasSlot()) navPushSlot();
   else if (!navDesired() && navHasSlot()) navPopSlot();
 }
-/* 统一的“返回一步”逻辑：返回 true=已处理某层；false=已在首页根层 */
 function handleBackCore() {
   const vis = (id) => { const e = document.getElementById(id); return !!(e && !e.classList.contains("hidden")); };
   const act = (id) => { const e = document.getElementById(id); return !!(e && e.classList.contains("active")); };
@@ -1292,7 +1279,7 @@ function handleBackCore() {
     if (vis("settingsDrawer")) { const m = $("drawerMask"); if (m) m.click(); return true; }
     if (act("screen-summary")) { animateToHome(); return true; }
     if (act("screen-session")) { setTimeout(() => { try { if (typeof endSession === "function") endSession(); } catch (e) {} }, 30); return true; }
-  } catch (e) { /* 忽略 */ }
+  } catch (e) {  }
   return false;
 }
 function navBack() { if (handleBackCore()) scheduleSyncNav(); }
@@ -1300,7 +1287,6 @@ window.addEventListener("popstate", () => {
   if (navIgnore) { navIgnore = false; scheduleSyncNav(); return; }
   navBack();
 });
-/* 原生端（Android）：注册系统返回/手势返回监听；根页面才允许退出 */
 function initNativeBack() {
   if (!IS_NATIVE) return;
   try {
@@ -1320,7 +1306,6 @@ function currentActiveScreen() {
     .map((id) => document.getElementById(id))
     .find((e) => e && e.classList.contains("active")) || null;
 }
-/* 返回/换场景时：旧页面轻滑出再进首页，避免生硬跳变 */
 function animateToHome() {
   stopSavedAudio();
   const cur = currentActiveScreen();
@@ -1346,7 +1331,7 @@ function showScreen(name) {
   });
   nxt.classList.add("active");
   nxt.classList.remove("screen-enter");
-  void nxt.offsetWidth; // 重启动画
+  void nxt.offsetWidth;
   nxt.classList.add("screen-enter");
   scheduleSyncNav();
 }
@@ -1399,7 +1384,6 @@ function fmtTime(sec) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-/* 气泡：kind = user | ai | coach */
 function addBubble(kind, text) {
   const row = el("div", `bubble-row ${kind === "user" ? "user" : "ai"}`);
   const whoTxt = kind === "user" ? "你" : kind === "coach" ? `🐱 ${MASCOT_NAME}` : `${S.scenario.emoji} ${S.scenario.role}`;
@@ -1419,7 +1403,7 @@ function scrollTranscript() {
 }
 
 function upsertBubble(kind, text, finished) {
-  if (!S.captions) return; // 纯听力模式不显示文字
+  if (!S.captions) return;
   if (!S.activeBubble || S.activeBubble.kind !== kind) addBubble(kind, "");
   S.activeBubble.el.textContent = text;
   if (finished) S.activeBubble = null;
@@ -1430,14 +1414,13 @@ function cleanCoachText(text) {
   return (text || "").replace(/【[^】]*】/g, "").replace(/^[\s:：\-—]+/, "").trim();
 }
 
-/* 把转写增量合并成完整句子：兼容“逐词推送”和“整句累积”两种模式 */
 function mergeTranscript(existing, incoming) {
   if (!incoming) return existing || "";
   if (!existing) return incoming;
-  if (incoming.startsWith(existing)) return incoming;       // 整句累积模式
-  if (existing.endsWith(incoming)) return existing;        // 重复尾巴，忽略
+  if (incoming.startsWith(existing)) return incoming;
+  if (existing.endsWith(incoming)) return existing;
   const sep = /[\s]$/.test(existing) || /^[\s.,!?;:，。！？；：'"-]/.test(incoming) ? "" : " ";
-  return existing + sep + incoming;                        // 逐词增量模式
+  return existing + sep + incoming;
 }
 
 /* ================= 计时 ================= */
@@ -1487,7 +1470,6 @@ async function startSession() {
     if (S.curUserSeg) S.curUserSeg.chunks.push(b64);
   });
 
-  // 关键：在用户点击手势内立刻初始化音频（浏览器自动播放策略）
   S.audioInit = Promise.allSettled([S.player.init(), S.capture.init()]).then((rs) => {
     log("播放初始化: " + (rs[0].status === "fulfilled" ? "OK" : "FAIL " + (rs[0].reason || "")));
     log("采集初始化: " + (rs[1].status === "fulfilled" ? "OK" : "FAIL " + (rs[1].reason || "")));
@@ -1753,7 +1735,7 @@ async function playReplay() {
         f = seg.spk === "user" ? upsampleAudio(raw, 16000, 24000) : raw;
       } catch (e) { log("回放解码失败: " + e.message); }
       if (f && f.length) {
-        p.node.port.postMessage(new Float32Array(2400)); // 0.1s 间隔
+        p.node.port.postMessage(new Float32Array(2400));
         p.node.port.postMessage(f);
         await new Promise((r) => setTimeout(r, 150 + Math.round((f.length / 24000) * 1000)));
       } else {
@@ -1959,7 +1941,6 @@ function endSession() {
   $("sumAi").textContent = `${S.aiTurns} 次`;
   $("sumBadge").textContent = `${S.scenario.emoji} ${S.scenario.title} · ${S.difficulty.label} · ${S.minutes} 分钟`;
 
-  // 晚晚记录
   const list = $("coachNotes");
   list.innerHTML = "";
   if (S.coachNotes.length) {
@@ -1988,14 +1969,12 @@ function endSession() {
     list.appendChild(li);
   }
 
-  // 鼓励语
   const mins = Math.max(1, Math.round(secs / 60));
   $("sumTip").textContent =
     `今天你开口练了 ${mins} 分钟，已经比昨天的自己更进一步了。` +
     `口语进步靠的是"每天一点点"，不是一次练很久。` +
     (S.coachNotes.length ? `\n\n把上面晚晚提到的 ${S.coachNotes.length} 个点记下来，下次练的时候用上，你会看到变化 💪` : `\n\n下次可以试试更难一点点的场景或难度。`);
 
-  // 记录本次练习
   if (S.userTurns > 0 || S.aiTurns > 0 || S.audioRecv > 0) {
     S.lastSessionId = Date.now();
     const rec = {
@@ -2006,7 +1985,6 @@ function endSession() {
     const all = loadSessions();
     all.unshift(rec);
     saveSessions(all);
-    // 把本次对话录音拼成 WAV 存到本机，之后在历史里可反复回听
     if (S.replaySegments && S.replaySegments.length) {
       try {
         const blob = buildSessionWavBlob(S.replaySegments);
@@ -2064,8 +2042,6 @@ function bindEvents() {
   const smode = localStorage.getItem("smeakMode");
   if (smode === "chat" || smode === "repeat") S.mode = smode;
   $("btnShuffle").onclick = () => shuffleScenarios();
-  // 点击「开始对话」立即进入全新会话页。不再先做耗时的 /api/token 探测
-  // （那会让点击后 1~3 秒毫无反应，看起来像没跳转）；连接检查放到会话页内进行。
   function handleStartClick() {
     if (!S.minutes) return;
     startSession();

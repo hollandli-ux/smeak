@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-"""SpeakMate 原型后端：托管前端 + 签发 Gemini Live 临时令牌（Key 不暴露给浏览器）。
-
-参考 Google 官方示例 gemini-live-ephemeral-tokens-websocket/server.py
-"""
+"""Smeak 后端：托管前端，签发 Gemini Live 临时令牌并生成自定义场景。"""
 import datetime
 import mimetypes
 import os
@@ -83,7 +80,6 @@ async def api_scenario(request):
     try:
         resp = client.models.generate_content(model=SCENARIO_MODEL, contents=prompt)
         text = (resp.text or "").strip()
-        # 去掉可能的 ```json 包裹
         if text.startswith("```"):
             text = text.split("\n", 1)[-1]
             text = text.rsplit("```", 1)[0]
@@ -148,7 +144,6 @@ async def ws_relay(request):
     if not cfg.get("systemInstruction"):
         await ws.close(message="missing-config")
         return ws
-    # 签发临时令牌
     now = datetime.datetime.now(tz=datetime.timezone.utc)
     expire = now + datetime.timedelta(minutes=30)
     token = client.auth_tokens.create(
