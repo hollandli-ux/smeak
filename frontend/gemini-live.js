@@ -161,17 +161,18 @@ class GeminiLiveClient {
       inputAudioTranscription: {},
       outputAudioTranscription: {},
     };
-    const silenceMs = this.vadMs > 0 ? this.vadMs : 800;
-    setup.realtimeInputConfig = {
-      automaticActivityDetection: {
-        disabled: false,
-        silenceDurationMs: silenceMs,
-        prefixPaddingMs: 300,
-        endOfSpeechSensitivity: "END_SENSITIVITY_UNSPECIFIED",
-        startOfSpeechSensitivity: "START_SENSITIVITY_UNSPECIFIED",
-      },
-      activityHandling: "ACTIVITY_HANDLING_UNSPECIFIED",
-    };
+    if (this.vadMs > 0) {
+      setup.realtimeInputConfig = {
+        automaticActivityDetection: {
+          disabled: false,
+          silenceDurationMs: this.vadMs,
+          prefixPaddingMs: 300,
+          endOfSpeechSensitivity: "END_SENSITIVITY_UNSPECIFIED",
+          startOfSpeechSensitivity: "START_SENSITIVITY_UNSPECIFIED",
+        },
+        activityHandling: "ACTIVITY_HANDLING_UNSPECIFIED",
+      };
+    }
     this._send(JSON.stringify({ setup }));
   }
 

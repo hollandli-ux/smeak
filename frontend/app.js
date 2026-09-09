@@ -484,6 +484,7 @@ const S = {
   evCount: {},
   coachNotes: [],
   lastCoachText: "",
+  turnNudge: null,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -757,6 +758,19 @@ function armSilenceWatch(delayMs) {
     suspendMicForAi();
     S.client.sendText("(LEARNER_SILENT) 学习者有一会儿没说话了，请温柔地主动引导他：给个简单问题或示范句，帮他开口。");
   }, delayMs);
+}
+function clearTurnNudge() {
+  if (S.turnNudge) { clearTimeout(S.turnNudge); S.turnNudge = null; }
+}
+function armTurnNudge(ms) {
+  if (S.turnNudge) return;
+  S.turnNudge = setTimeout(() => {
+    S.turnNudge = null;
+    if (S.ended || S.wrapRequested) return;
+    if (!S.client || !S.client.ws || S.client.ws.readyState !== WebSocket.OPEN) return;
+    log("兜底：AI 未回应，补发一次触发");
+    try { S.client.askModelToRespond(); } catch (e) {}
+  }, ms || 3000);
 }
 function todayMinutes(list) {
   const k = dayKey(new Date());
@@ -1549,6 +1563,7 @@ function handleLiveEvent(r) {
       break;
     }
     case LIVE_RESP.SPEECH_START: {
+      clearTurnNudge();
       clearSilenceWatch();
       S.userLogged = false;
       setStatus("正在听你说…", "listening");
@@ -1564,6 +1579,8 @@ function handleLiveEvent(r) {
       flushUserSeg();
       if (!S.userLogged) S.turnLog.push({ who: "你", text: "（语音）" });
       S.userTurns++;
+      clearTurnNudge();
+      armTurnNudge(3000);
       break;
     }
     case LIVE_RESP.INPUT_TRANSCRIPTION: {
@@ -1576,6 +1593,7 @@ function handleLiveEvent(r) {
         else S.turnLog.push({ who: "你", text: it.trim() });
         S.userLogged = true;
       }
+      if (r.data.finished) { clearTurnNudge(); armTurnNudge(3000); }
       break;
     }
     case LIVE_RESP.OUTPUT_TRANSCRIPTION: {
@@ -1586,6 +1604,7 @@ function handleLiveEvent(r) {
       if (S.evCount[LIVE_RESP.OUTPUT_TRANSCRIPTION] === 1 && r.data.raw) log("outputTx原始: " + r.data.raw);
       if (text && !S.gotModelTurn) {
         S.gotModelTurn = true;
+        clearTurnNudge();
         log("收到 AI 文字: " + text.slice(0, 60) + "…");
       }
       setStatus(isCoach ? `${MASCOT_NAME} 来了 🐱` : "AI 正在说…", "speaking");
@@ -1618,6 +1637,7 @@ function handleLiveEvent(r) {
       break;
     }
     case LIVE_RESP.AUDIO: {
+      clearTurnNudge();
       S.audioRecv++;
       S.gotModelTurn = true;
       if (!S.curAiSeg) S.curAiSeg = { chunks: [], spk: "ai" };
@@ -1631,6 +1651,7 @@ function handleLiveEvent(r) {
       break;
     }
     case LIVE_RESP.INTERRUPTED: {
+      clearTurnNudge();
       if (S.player) S.player.interrupt();
       flushAiSeg();
       S.aiTurnText = "";
@@ -1640,6 +1661,7 @@ function handleLiveEvent(r) {
       break;
     }
     case LIVE_RESP.TURN_COMPLETE: {
+      clearTurnNudge();
       flushAiSeg();
       if (S.audioRecv > S.audioAtTurnStart) S.aiTurns++;
       S.audioAtTurnStart = S.audioRecv;
