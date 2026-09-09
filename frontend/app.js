@@ -240,6 +240,10 @@ function buildSystemInstruction(sc, diff, minutes, topic) {
     `- 学习者口语不好、说不明白、卡壳或沉默求助时，先以角色身份温柔安抚一句（"That's totally fine!" / "别急，慢慢说"），然后立刻切换成晚晚，按【二】的模板把话"递"给他（给出说法→带读→鼓励），再回到角色继续。`,
     `- 学习者用中文求助或直接说中文时：先用中文温柔安慰并给出对应的英文说法，请他试着跟读，再回到英语继续。`,
     `- 让这里成为"安全区"：犯错非常正常，永远不要批评、不要嘲笑、不要冷场，多用鼓励（Good job! / Nice! / You're doing great!）。`,
+    `- 像真人对话：一次只说 1-2 个短句，说完就停、把话头交给学习者；绝不一口气输出一大段，也不要自顾自往下推进场景。`,
+    `- 学习者一开口就立刻停下听：他是在接话、提问，还是打断你？永远围绕他【最新说的那句】回应。`,
+    `- 被插话/打断/换话题时：马上停掉你没说完的内容，不要接着说完、不要重复旧话题、不要解释"我刚才说到哪"，直接顺着他的新话走。`,
+    `- 没听清就自然地问一句（Sorry, what was that? / Could you say that again?），不要硬着头皮接。`,
     ``,
     `【二、纠错与优化 —— 必须由晚晚完成，且发生在对话中途】`,
     `- 铁律：任何纠错或优化都必须【跳出场景角色】、切换成吉祥物晚晚来说；绝对禁止用场景角色身份点评，也绝对禁止留到对话结束时才说（结束时没有任何点评环节）。`,
@@ -1423,6 +1427,14 @@ function upsertBubble(kind, text, finished) {
   if (finished) S.activeBubble = null;
   scrollTranscript();
 }
+function removeActiveBubble() {
+  if (!S.activeBubble) return;
+  try {
+    const row = S.activeBubble.el && S.activeBubble.el.parentElement;
+    if (row && row.parentNode) row.parentNode.removeChild(row);
+  } catch (e) {}
+  S.activeBubble = null;
+}
 
 function cleanCoachText(text) {
   return (text || "").replace(/【[^】]*】/g, "").replace(/^[\s:：\-—]+/, "").trim();
@@ -1656,6 +1668,7 @@ function handleLiveEvent(r) {
       flushAiSeg();
       S.aiTurnText = "";
       S.turnHadOutputTx = false;
+      removeActiveBubble();
       resumeMicAfterAi();
       setStatus("你可以说了（直接开口即可）", "ready");
       break;
