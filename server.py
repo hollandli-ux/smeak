@@ -116,15 +116,16 @@ def _live_setup(cfg):
         "outputAudioTranscription": {},
     }
     vad = int(cfg.get("vadMs") or 0)
-    if vad > 0:
-        setup["realtimeInputConfig"] = {
-            "automaticActivityDetection": {
-                "disabled": False, "silenceDurationMs": vad, "prefixPaddingMs": 300,
-                "endOfSpeechSensitivity": "END_SENSITIVITY_UNSPECIFIED",
-                "startOfSpeechSensitivity": "START_SENSITIVITY_UNSPECIFIED",
-            },
-            "activityHandling": "ACTIVITY_HANDLING_UNSPECIFIED",
-        }
+    setup["realtimeInputConfig"] = {
+        "automaticActivityDetection": {
+            "disabled": False,
+            "silenceDurationMs": vad if vad > 0 else 800,
+            "prefixPaddingMs": 300,
+            "endOfSpeechSensitivity": "END_SENSITIVITY_UNSPECIFIED",
+            "startOfSpeechSensitivity": "START_SENSITIVITY_UNSPECIFIED",
+        },
+        "activityHandling": "ACTIVITY_HANDLING_UNSPECIFIED",
+    }
     return setup
 
 
