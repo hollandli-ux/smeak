@@ -477,6 +477,7 @@ const S = {
   replaySegments: [],
   curUserSeg: null,
   curAiSeg: null,
+  aiSpeaking: false,
   replayPlaying: false,
   voicePreviewing: false,
   turnLog: [],
@@ -1373,6 +1374,7 @@ function resetSessionUI() {
   S.replaySegments = [];
   S.curUserSeg = null;
   S.curAiSeg = null;
+  S.aiSpeaking = false;
   S.replayPlaying = false;
   S.voicePreviewing = false;
   S.turnLog = [];
@@ -1493,7 +1495,10 @@ async function startSession() {
   S.player = new AudioPlayer();
   S.capture = new AudioCapture((b64) => {
     if (S.client) S.client.sendAudioBase64(b64);
-    if (S.curUserSeg) S.curUserSeg.chunks.push(b64);
+    if (!S.muted && !S.aiSpeaking) {
+      if (!S.curUserSeg) S.curUserSeg = { chunks: [], spk: "user" };
+      S.curUserSeg.chunks.push(b64);
+    }
   });
 
   S.audioInit = Promise.allSettled([S.player.init(), S.capture.init()]).then((rs) => {
@@ -1577,6 +1582,7 @@ function handleLiveEvent(r) {
     case LIVE_RESP.SPEECH_START: {
       clearTurnNudge();
       clearSilenceWatch();
+      S.aiSpeaking = false;
       S.userLogged = false;
       setStatus("正在听你说…", "listening");
       if (S.captions && (!S.activeBubble || S.activeBubble.kind !== "user")) addBubble("user", "…");
@@ -1610,6 +1616,7 @@ function handleLiveEvent(r) {
     }
     case LIVE_RESP.OUTPUT_TRANSCRIPTION: {
       const inc = r.data.text || "";
+      if (inc) { if (S.curUserSeg) flushUserSeg(); S.aiSpeaking = true; }
       S.aiTurnText = mergeTranscript(S.aiTurnText, inc);
       const text = S.aiTurnText;
       const isCoach = text.indexOf(MASCOT_NAME) >= 0;
@@ -1650,6 +1657,8 @@ function handleLiveEvent(r) {
     }
     case LIVE_RESP.AUDIO: {
       clearTurnNudge();
+      if (S.curUserSeg) flushUserSeg();
+      S.aiSpeaking = true;
       S.audioRecv++;
       S.gotModelTurn = true;
       if (!S.curAiSeg) S.curAiSeg = { chunks: [], spk: "ai" };
@@ -1664,6 +1673,7 @@ function handleLiveEvent(r) {
     }
     case LIVE_RESP.INTERRUPTED: {
       clearTurnNudge();
+      S.aiSpeaking = false;
       if (S.player) S.player.interrupt();
       flushAiSeg();
       S.aiTurnText = "";
@@ -1675,6 +1685,7 @@ function handleLiveEvent(r) {
     }
     case LIVE_RESP.TURN_COMPLETE: {
       clearTurnNudge();
+      S.aiSpeaking = false;
       flushAiSeg();
       if (S.audioRecv > S.audioAtTurnStart) S.aiTurns++;
       S.audioAtTurnStart = S.audioRecv;
