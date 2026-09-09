@@ -1,0 +1,9 @@
+{
+  "appId": "com.smeak.practice",
+  "appName": "Smeak",
+  "webDir": "frontend",
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#f2f2f7"
+  }
+}

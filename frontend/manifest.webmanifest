@@ -1,0 +1,14 @@
+{
+  "name": "Smeak · AI 口语陪练",
+  "short_name": "Smeak",
+  "description": "利用碎片时间，像聊天一样练口语",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#0d7c6f",
+  "theme_color": "#0d7c6f",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

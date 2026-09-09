@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f766e" />
+  <title>Smeak · AI 口语陪练</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Smeak" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="splash" class="splash">
+    <span class="s-logo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5C6.8 2.5 2.5 6.4 2.5 11c0 2.2 1.1 4.2 2.8 5.6-.2 1.5-.9 2.8-1.8 3.9-.3.3-.1.8.3.8 1.8 0 3.5-.7 4.9-1.7 1.1.3 2.2.4 3.3.4 5.2 0 9.5-3.9 9.5-8.5S17.2 2.5 12 2.5z" fill="#fff"/></svg></span>
+    <div class="s-name">Smeak</div>
+    <div class="s-dots"><span></span><span></span><span></span></div>
+  </div>
+  <div class="app">
+
+    <!-- 首页 -->
+    <main id="screen-setup" class="screen active setup-frame">
+      <header class="setup-top">
+        <div class="setup-brand">
+          <span class="app-logo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5C6.8 2.5 2.5 6.4 2.5 11c0 2.2 1.1 4.2 2.8 5.6-.2 1.5-.9 2.8-1.8 3.9-.3.3-.1.8.3.8 1.8 0 3.5-.7 4.9-1.7 1.1.3 2.2.4 3.3.4 5.2 0 9.5-3.9 9.5-8.5S17.2 2.5 12 2.5z" fill="#fff"/></svg></span>
+          <div class="brand-txt">
+            <div class="brand-name">Smeak</div>
+            <div class="brand-sub">和晚晚一起开口说</div>
+          </div>
+        </div>
+        <div class="setup-top-actions">
+          <button id="themeToggle" class="icon-btn" type="button" title="深色/浅色"><span data-icon="moon"></span></button>
+          <button id="settingsBtn" class="icon-btn" type="button" title="设置"><span data-icon="sliders"></span></button>
+        </div>
+      </header>
+
+      <div class="scene-block">
+        <div class="scene-head">
+          <span class="scene-title" id="sceneCount">挑一个开始</span>
+          <div class="head-actions">
+            <button id="customBtn" class="mini-chip" type="button"><span data-icon="plus" data-size="14"></span>自定义</button>
+            <button id="btnShuffle" class="mini-chip" type="button"><span data-icon="refresh" data-size="14"></span>换一批</button>
+          </div>
+        </div>
+        <div class="search-row">
+          <input id="searchInput" class="search-input" type="text" maxlength="30" placeholder="搜索场景" />
+          <button id="searchClear" class="btn-mini search-clear hidden" type="button"><span data-icon="close" data-size="13"></span></button>
+        </div>
+        <div id="categoryRow" class="chip-row"></div>
+        <div id="sceneScroll" class="scene-scroll">
+          <div id="scenarioGrid" class="scenario-grid"></div>
+          <p id="roleHint" class="role-hint"></p>
+          <div id="warmup" class="warmup hidden">
+            <div class="warmup-title">练前预热 · 可以这样说</div>
+            <ul id="warmupList" class="warmup-list"></ul>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- 场景开始弹层 -->
+    <div id="lessonMask" class="drawer-mask hidden"></div>
+    <aside id="lessonSheet" class="drawer lesson-sheet hidden">
+      <div class="ls-body">
+        <div class="ls-head">
+          <div class="ls-emoji" id="lsEmoji">☕</div>
+          <div class="ls-meta">
+            <div class="ls-title" id="lsTitle">咖啡厅点单</div>
+            <div class="ls-en" id="lsEn">At a café</div>
+          </div>
+          <button id="lsClose" class="icon-btn" type="button"><span data-icon="close"></span></button>
+        </div>
+        <div class="ls-warm hidden" id="lsWarm"><div class="warmup-title">练前预热 · 可以这样说</div><ul id="lsWarmList" class="warmup-list"></ul></div>
+        <div class="field">
+          <span class="field-label">难度</span>
+          <div id="difficultyOptions" class="seg-row seg-3"></div>
+        </div>
+        <div class="field">
+          <span class="field-label">时长</span>
+          <div id="durationOptions" class="seg-row seg-3"></div>
+        </div>
+        <button id="btnStart" class="btn-primary"><span data-icon="mic"></span><span class="btn-label">开始对话</span></button>
+      </div>
+    </aside>
+
+    <!-- 侧滑设置抽屉 -->
+    <div id="drawerMask" class="drawer-mask hidden"></div>
+    <aside id="settingsDrawer" class="drawer hidden">
+      <div class="drawer-head">
+        <b>设置</b>
+        <button id="drawerClose" class="icon-btn" type="button"><span data-icon="close"></span></button>
+      </div>
+      <div class="drawer-body">
+        <details class="drawer-group" open>
+          <summary>练习</summary>
+          <div class="field">
+            <span class="field-label">练习模式</span>
+            <div class="seg-row" id="modeOptions">
+              <button id="modeChat" class="seg-btn selected" type="button">自由对话</button>
+              <button id="modeRepeat" class="seg-btn" type="button">跟读练习</button>
+            </div>
+          </div>
+          <div class="field">
+            <span class="field-label">自定义话题</span>
+            <input id="topicInput" class="input" type="text" maxlength="60" placeholder="例如：我最近在学做饭" />
+          </div>
+          <div class="field">
+            <span class="field-label">AI 音色</span>
+            <div class="voice-row">
+              <select id="voiceSelect" class="input">
+                <option value="Aoede">Aoede（默认）</option>
+                <option value="Kore">Kore</option>
+                <option value="Puck">Puck</option>
+                <option value="Charon">Charon</option>
+                <option value="Fenrir">Fenrir</option>
+                <option value="Leda">Leda</option>
+                <option value="Orus">Orus</option>
+                <option value="Zephyr">Zephyr</option>
+              </select>
+              <button id="voicePreview" class="btn-mini voice-preview-btn" type="button">试听</button>
+            </div>
+          </div>
+          <div class="field">
+            <span class="field-label">字幕</span>
+            <div class="seg-row" id="captionOptions">
+              <button id="capOn" class="seg-btn" type="button">显示</button>
+              <button id="capOff" class="seg-btn" type="button">隐藏（练听力）</button>
+            </div>
+            <p id="capHint" class="hint"></p>
+          </div>
+          <div class="field">
+            <span class="field-label">AI 语速</span>
+            <div class="seg-row" id="speedOptions"></div>
+            <p class="hint">慢速适合跟读练嘴，快速适合回听复习；在本机变速，不额外产生费用。</p>
+          </div>
+          <div class="field">
+            <span class="field-label">音量</span>
+            <div class="vol-row">
+              <input id="volRange" class="vol-range" type="range" min="0" max="100" value="80" />
+              <span id="volLabel" class="vol-label">80%</span>
+            </div>
+          </div>
+          <div class="field">
+            <span class="field-label">停顿识别</span>
+            <div class="seg-row" id="vadOptions"></div>
+            <p class="hint">决定你「停顿多久算说完」：默认＝系统标准；更灵敏＝你稍停一下就回应；更宽松＝等你停顿久一点再回应。</p>
+          </div>
+          <div class="field">
+            <span class="field-label">每日目标</span>
+            <div class="seg-row" id="goalOptions"></div>
+            <p id="goalHint" class="hint"></p>
+            <button id="remindBtn" class="cap-toggle" type="button" style="margin-top:8px">提醒</button>
+          </div>
+        </details>
+
+        <details class="drawer-group">
+          <summary>历史与数据</summary>
+          <div class="data-actions">
+            <button id="reportBtn" class="mini-chip" type="button">周报</button>
+            <button id="calendarBtn" class="mini-chip" type="button">月历</button>
+            <button id="historyExport" class="mini-chip" type="button">导出</button>
+            <button id="historyClear" class="mini-chip" type="button">清空</button>
+          </div>
+          <div id="savedCard" class="hidden">
+            <div class="data-sub-head">
+              <b>收藏的表达</b>
+              <span class="head-actions">
+                <button id="savedReview" class="mini-chip" type="button">复习</button>
+                <button id="savedClear" class="mini-chip" type="button">清空</button>
+              </span>
+            </div>
+            <div id="savedList" class="history-list"></div>
+          </div>
+          <div id="weekBars" class="week-bars"></div>
+          <div id="calendarWrap" class="calendar-wrap hidden">
+            <div class="cal-head">
+              <button id="calPrev" class="btn-mini" type="button">‹</button>
+              <span id="calTitle" class="cal-title"></span>
+              <button id="calNext" class="btn-mini" type="button">›</button>
+            </div>
+            <div class="cal-grid" id="calendarGrid"></div>
+          </div>
+          <div id="historyCard">
+            <div id="historyList" class="history-list"></div>
+          </div>
+        </details>
+
+        <details class="drawer-group">
+          <summary>连接</summary>
+          <p class="hint">语音需要 Google API Key，填入后即可使用；手机需能访问 Google（部分网络需开启代理）。</p>
+          <div class="conn-card">
+            <div class="conn-field">
+              <label class="conn-label" for="keyInput">Google API Key（直连）</label>
+              <div class="key-row">
+                <input id="keyInput" class="input" type="password" placeholder="粘贴 AIza… 开头的密钥" autocomplete="off" />
+                <button id="keySave" class="btn-mini">保存</button>
+              </div>
+            </div>
+            <div class="conn-divider"></div>
+            <div class="conn-field">
+              <label class="conn-label" for="backendInput">后端地址（可选）</label>
+              <div class="key-row">
+                <input id="backendInput" class="input" type="text" placeholder="https://… 或 http://IP:8000" autocomplete="off" />
+                <button id="backendSave" class="btn-mini">保存</button>
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
+    </aside>
+
+<!-- 对话页 -->
+    <main id="screen-session" class="screen">
+      <div class="session-top">
+        <div class="session-meta">
+          <div id="sessionBadge" class="session-badge"></div>
+          <div class="status-row">
+            <span id="statusPill" class="status-pill connecting">正在连接 AI…</span>
+            <button id="micToggle" class="cap-toggle on" type="button">🎙️ 开</button>
+            <button id="sessionCapToggle" class="cap-toggle" type="button">字幕：开</button>
+          </div>
+        </div>
+        <div id="timer" class="timer">⏱ <span id="timerText">10:00</span></div>
+      </div>
+
+      <div id="transcript" class="transcript">
+        <div id="captionHint" class="caption-hint hidden">
+          <div class="caption-hint-icon">🎧</div>
+          <div>纯听力模式</div>
+          <div class="caption-hint-sub">不显示文字，专心听 AI 说什么</div>
+        </div>
+      </div>
+
+      <div class="session-foot">
+        <div class="text-row hidden" id="textRow">
+          <input id="textInput" class="text-input" type="text" maxlength="300"
+                 placeholder="打字输入，按回车发送" autocomplete="off" />
+          <button id="textSend" class="btn-mini" type="button">发送</button>
+        </div>
+        <button id="btnTextToggle" class="text-toggle" type="button">⌨️ 打不开麦 / 识别不到？打字说</button>
+        <button id="retryBtn" class="btn-retry hidden" type="button">🔄 重新连接</button>
+        <button id="btnEnd" class="btn-end">✋ 结束练习</button>
+        <p class="mic-hint">🎤 直接开口说，说完停顿一下 AI 就会回应</p>
+      </div>
+    </main>
+
+    <!-- 结束总结 -->
+    <main id="screen-summary" class="screen">
+      <div class="summary-card">
+        <div class="sum-emoji">🎉</div>
+        <h2>练完啦，真棒！</h2>
+        <div id="sumBadge" class="sum-badge"></div>
+        <div id="sumStreak" class="sum-streak hidden"></div>
+        <div class="sum-stats">
+          <div class="stat"><div class="stat-num" id="sumDuration">00:00</div><div class="stat-label">对话时长</div></div>
+          <div class="stat"><div class="stat-num" id="sumUser">0</div><div class="stat-label">你的发言</div></div>
+          <div class="stat"><div class="stat-num" id="sumAi">0</div><div class="stat-label">AI 回复</div></div>
+        </div>
+
+        <div class="coach-box">
+          <div class="tip-title">🐱 晚晚的记录</div>
+          <ul id="coachNotes" class="coach-notes"></ul>
+        </div>
+
+        <div class="tip-box">
+          <div class="tip-title">💬 想对你说</div>
+          <p id="sumTip"></p>
+        </div>
+
+        <div class="sum-actions">
+          <button id="btnAgain" class="btn-primary">🔁 再练一次</button>
+          <button id="btnHome" class="btn-ghost">换场景</button>
+        </div>
+        <button id="btnReplay" class="btn-ghost btn-replay" type="button">🔊 回放本次录音</button>
+        <button id="btnExport" class="btn-ghost btn-replay" type="button">⬇️ 导出对话文本</button>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <div id="customModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head"><b>✨ 生成自定义场景</b><button id="customClose" class="btn-mini" type="button">✕</button></div>
+      <p class="hint">输入你想练的主题，AI 会现场生成一个专属场景（角色 / 地点 / 开场白 / 预热句）。</p>
+      <textarea id="customTopic" class="topic-input" rows="2" maxlength="80"
+                placeholder="例如：和房东沟通维修 / 点奶茶 / 向同事请教问题 / 去健身房咨询私教课"></textarea>
+      <p id="customError" class="hint custom-error hidden"></p>
+      <div class="modal-actions">
+        <button id="customClear" class="btn-ghost hidden" type="button">移除当前</button>
+        <button id="customGo" class="btn-primary" type="button" style="flex:1">生成场景 ✨</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="reportModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head"><b id="modalTitle">📊 练习报告</b><button id="reportClose" class="btn-mini" type="button">✕</button></div>
+      <div id="reportBody" class="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- 录音回听条（保存在本机，历史里可反复听） -->
+  <div id="audioBar" class="audio-bar hidden">
+    <div class="audio-bar-title" id="audioBarTitle">🔊 对话录音</div>
+    <div class="audio-bar-main">
+      <audio id="hisAudio" controls preload="metadata"></audio>
+      <button id="audioBarClose" class="btn-mini" type="button" title="关闭">✕</button>
+    </div>
+  </div>
+
+  <!-- 调试面板（无入口按钮，仅供排查时使用） -->
+  <div id="debugPanel" class="debug-panel hidden">
+    <div class="debug-head">
+      <b>🐞 调试日志</b>
+      <span class="debug-actions">
+        <button id="btnTestSound" class="btn-mini" type="button">🔊 测试声音</button>
+        <button id="debugClose" class="btn-mini" type="button">✕</button>
+      </span>
+    </div>
+    <pre id="debugLog" class="debug-log"></pre>
+  </div>
+
+  <script src="gemini-live.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
