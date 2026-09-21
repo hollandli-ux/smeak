@@ -9,6 +9,7 @@ const MASCOT_EMOJI = "🐱";
 /* ================= 线性图标库（SVG） ================= */
 const ICON_PATHS = {
   mic: '<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>',
+  cog: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
   sliders: '<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
   moon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
   sun: '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>',
@@ -244,6 +245,8 @@ function buildSystemInstruction(sc, diff, minutes, topic) {
     `- 学习者一开口就立刻停下听：他是在接话、提问，还是打断你？永远围绕他【最新说的那句】回应。`,
     `- 被插话/打断/换话题时：马上停掉你没说完的内容，不要接着说完、不要重复旧话题、不要解释"我刚才说到哪"，直接顺着他的新话走。`,
     `- 没听清就自然地问一句（Sorry, what was that? / Could you say that again?），不要硬着头皮接。`,
+    `- 每次回应尽量带一个与刚才内容相关的小问题（"How about you?" / "What do you think?"），像打乒乓球一样有来有回。`,
+    `- 不要复读学习者刚说的话、不要重复同一句式、不要旁白和总结，用简单自然的日常英语。`,
     ``,
     `【二、纠错与优化 —— 必须由晚晚完成，且发生在对话中途】`,
     `- 铁律：任何纠错或优化都必须【跳出场景角色】、切换成吉祥物晚晚来说；绝对禁止用场景角色身份点评，也绝对禁止留到对话结束时才说（结束时没有任何点评环节）。`,
@@ -304,7 +307,7 @@ class AudioCapture {
     if (this.running) return;
     await this.init();
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { sampleRate: 16000, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
     });
     this.stream = stream;
     if (this.ctx.state === "suspended") { try { await this.ctx.resume(); } catch (e) {} }
@@ -478,6 +481,7 @@ const S = {
   curUserSeg: null,
   curAiSeg: null,
   aiSpeaking: false,
+  curAiIsCoach: false,
   replayPlaying: false,
   voicePreviewing: false,
   turnLog: [],
@@ -490,6 +494,7 @@ const S = {
   coachNotes: [],
   lastCoachText: "",
   turnNudge: null,
+  turnNudge2: null,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -578,35 +583,35 @@ function fmtMB(bytes) { return (bytes / (1024 * 1024)).toFixed(1) + "MB"; }
 
 function buildSessionWavBlob(segs) {
   const SR = 24000, GAP = Math.round(SR * 0.12);
-  const parts = [];
+  const MAX = SR * 60 * 12; // 上限 12 分钟，避免手机端一次性吃太多内存
+  const chunks = [];
   let total = 0;
   (segs || []).forEach((seg) => {
-    if (!seg || !seg.chunks || !seg.chunks.length) return;
+    if (!seg || !seg.chunks || !seg.chunks.length || total >= MAX) return;
     const raw = concatFloats(seg.chunks.map(decodePCMToFloat));
     const f = seg.spk === "user" ? upsampleAudio(raw, 16000, SR) : raw;
-    parts.push(f);
-    total += f.length + GAP;
-  });
-  if (!parts.length) return null;
-  const i16 = new Int16Array(total);
-  let o = 0;
-  parts.forEach((f) => {
-    for (let i = 0; i < f.length; i++) {
-      const v = Math.max(-1, Math.min(1, f[i]));
-      i16[o++] = v < 0 ? v * 0x8000 : v * 0x7fff;
+    let peak = 0;
+    for (let i = 0; i < f.length; i++) { const a = Math.abs(f[i]); if (a > peak) peak = a; }
+    const gain = peak > 0.01 ? Math.min(5, 0.85 / peak) : 1; // 录音太小就放大
+    const n = Math.min(f.length, MAX - total);
+    const i16 = new Int16Array(n + GAP);
+    for (let i = 0; i < n; i++) {
+      const v = Math.max(-1, Math.min(1, f[i] * gain));
+      i16[i] = v < 0 ? v * 0x8000 : v * 0x7fff;
     }
-    o += GAP;
+    chunks.push(new Uint8Array(i16.buffer));
+    total += n + GAP;
   });
-  const dataBytes = i16.length * 2;
-  const buf = new ArrayBuffer(44 + dataBytes);
-  const dv = new DataView(buf);
+  if (!chunks.length) return null;
+  const dataBytes = total * 2;
+  const header = new ArrayBuffer(44);
+  const dv = new DataView(header);
   const ws = (off, str) => { for (let i = 0; i < str.length; i++) dv.setUint8(off + i, str.charCodeAt(i)); };
   ws(0, "RIFF"); dv.setUint32(4, 36 + dataBytes, true); ws(8, "WAVE");
   ws(12, "fmt "); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
   dv.setUint32(24, SR, true); dv.setUint32(28, SR * 2, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true);
   ws(36, "data"); dv.setUint32(40, dataBytes, true);
-  new Uint8Array(buf, 44).set(new Uint8Array(i16.buffer, 0, dataBytes));
-  return new Blob([buf], { type: "audio/wav" });
+  return new Blob([header, ...chunks], { type: "audio/wav" });
 }
 
 async function saveSessionAudioAsync(id, blob, durSec) {
@@ -766,6 +771,7 @@ function armSilenceWatch(delayMs) {
 }
 function clearTurnNudge() {
   if (S.turnNudge) { clearTimeout(S.turnNudge); S.turnNudge = null; }
+  if (S.turnNudge2) { clearTimeout(S.turnNudge2); S.turnNudge2 = null; }
 }
 function armTurnNudge(ms) {
   if (S.turnNudge) return;
@@ -775,6 +781,13 @@ function armTurnNudge(ms) {
     if (!S.client || !S.client.ws || S.client.ws.readyState !== WebSocket.OPEN) return;
     log("兜底：AI 未回应，补发一次触发");
     try { S.client.askModelToRespond(); } catch (e) {}
+    const at = S.audioRecv;
+    S.turnNudge2 = setTimeout(() => {
+      S.turnNudge2 = null;
+      if (S.ended || S.audioRecv !== at) return;
+      log("长时间无响应，自动重连");
+      handleDisconnect("长时间无响应");
+    }, 8000);
   }, ms || 3000);
 }
 function todayMinutes(list) {
@@ -1412,7 +1425,9 @@ function addBubble(kind, text) {
   bub.textContent = text || "…";
   row.appendChild(who);
   row.appendChild(bub);
-  $("transcript").appendChild(row);
+  const tr = $("transcript");
+  tr.appendChild(row);
+  while (tr.children.length > 60) tr.removeChild(tr.firstChild);
   S.activeBubble = { kind, el: bub };
   scrollTranscript();
 }
@@ -1453,29 +1468,28 @@ function mergeTranscript(existing, incoming) {
 
 /* ================= 计时 ================= */
 function startCountdown(totalSeconds) {
+  S.sessionDeadline = Date.now() + totalSeconds * 1000;
   S.secondsLeft = totalSeconds;
   const timerEl = $("timerText");
   timerEl.textContent = fmtTime(totalSeconds);
   clearInterval(S.timer);
-  S.timer = setInterval(() => {
-    S.secondsLeft--;
-    timerEl.textContent = fmtTime(Math.max(0, S.secondsLeft));
-    $("timer").classList.toggle("warn", S.secondsLeft <= 30 && S.secondsLeft > 0);
-    if (S.secondsLeft <= 0 && !S.wrapRequested && !S.ended) {
-      S.wrapRequested = true;
-      setStatus("时间到，正在道别…", "wrapping");
-      sendFarewell();
+  const tick = () => {
+    const left = Math.max(0, Math.ceil((S.sessionDeadline - Date.now()) / 1000));
+    S.secondsLeft = left;
+    timerEl.textContent = fmtTime(left);
+    $("timer").classList.toggle("warn", left <= 30 && left > 0);
+    if (left <= 0) {
+      clearInterval(S.timer); S.timer = null;
+      if (!S.ended) { S.wrapRequested = true; setStatus("时间到，本次练习结束", "wrapping"); endSession(); }
     }
-  }, 1000);
+  };
+  tick();
+  S.timer = setInterval(tick, 500);
 }
 
 function sendFarewell() {
-  log("发送道别请求");
-  suspendMicForAi();
-  S.client && S.client.sendText(
-    "(Time is up / I need to stop here.) Thank you for the conversation. Please say a warm goodbye in character in 1-2 sentences only — no summary, no feedback. Thanks!"
-  );
-  setTimeout(() => { if (!S.ended) endSession(); }, 12000);
+  // 不再让 AI 说道别语音：直接结束，避免卡死在等待回复
+  endSession();
 }
 
 /* ================= 会话主流程 ================= */
@@ -1626,6 +1640,7 @@ function handleLiveEvent(r) {
         clearTurnNudge();
         log("收到 AI 文字: " + text.slice(0, 60) + "…");
       }
+      if (isCoach) S.curAiIsCoach = true;
       setStatus(isCoach ? `${MASCOT_NAME} 来了 🐱` : "AI 正在说…", "speaking");
       S.turnHadOutputTx = true;
       if (S.captions) upsertBubble(isCoach ? "coach" : "ai", text || "…", false);
@@ -1730,7 +1745,13 @@ function flushUserSeg() {
   if (S.curUserSeg) { if (S.curUserSeg.chunks.length) S.replaySegments.push(S.curUserSeg); S.curUserSeg = null; }
 }
 function flushAiSeg() {
-  if (S.curAiSeg) { if (S.curAiSeg.chunks.length) S.replaySegments.push(S.curAiSeg); S.curAiSeg = null; }
+  if (S.curAiSeg) {
+    // 晚晚（纠错/优化）的语音不录入回放，只保留场景对话
+    if (S.curAiSeg.chunks.length && !S.curAiIsCoach) S.replaySegments.push(S.curAiSeg);
+    else if (S.curAiIsCoach) log("跳过晚晚语音，不录入回放");
+    S.curAiSeg = null;
+  }
+  S.curAiIsCoach = false;
 }
 function decodePCMToFloat(b64) {
   const bin = atob(b64);
@@ -2097,13 +2118,8 @@ function bindEvents() {
   if (rb) rb.onclick = () => { rb.classList.add("hidden"); cleanupAfterFail(); startSession(); };
   $("btnEnd").onclick = () => {
     if (S.ended) return;
-    if (!S.wrapRequested) {
-      S.wrapRequested = true;
-      setStatus("正在道别…", "wrapping");
-      sendFarewell();
-    } else {
-      endSession();
-    }
+    S.wrapRequested = true;
+    endSession();
   };
   $("btnAgain").onclick = () => { startSession(); };
   const rp = $("btnReplay");

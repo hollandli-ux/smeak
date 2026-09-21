@@ -116,15 +116,17 @@ def _live_setup(cfg):
         "outputAudioTranscription": {},
     }
     vad = int(cfg.get("vadMs") or 0)
-    if vad > 0:
-        setup["realtimeInputConfig"] = {
-            "automaticActivityDetection": {
-                "disabled": False, "silenceDurationMs": vad, "prefixPaddingMs": 300,
-                "endOfSpeechSensitivity": "END_SENSITIVITY_UNSPECIFIED",
-                "startOfSpeechSensitivity": "START_SENSITIVITY_UNSPECIFIED",
-            },
-            "activityHandling": "ACTIVITY_HANDLING_UNSPECIFIED",
-        }
+    # 灵敏度调低：更不容易被背景说话/杂音触发（宿舍场景）
+    setup["realtimeInputConfig"] = {
+        "automaticActivityDetection": {
+            "disabled": False,
+            "silenceDurationMs": vad if vad > 0 else 900,
+            "prefixPaddingMs": 300,
+            "endOfSpeechSensitivity": "END_SENSITIVITY_LOW",
+            "startOfSpeechSensitivity": "START_SENSITIVITY_LOW",
+        },
+        "activityHandling": "ACTIVITY_HANDLING_UNSPECIFIED",
+    }
     return setup
 
 

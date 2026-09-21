@@ -1256,3 +1256,7 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
   transition: opacity .15s ease, transform .18s ease;
   pointer-events: none;
 }
+
+/* v0.31：顶部安全区下移 + 排版留白 */
+.setup-top { padding-top: calc(env(safe-area-inset-top, 0px) + 12px); }
+.scene-block { padding-top: 6px; }
