@@ -481,6 +481,8 @@ const S = {
   curUserSeg: null,
   curAiSeg: null,
   aiSpeaking: false,
+  userSpeaking: false,
+  wrapTimer: null,
   curAiIsCoach: false,
   replayPlaying: false,
   voicePreviewing: false,
@@ -1383,6 +1385,8 @@ function resetSessionUI() {
   S.audioPlayed = 0;
   S.gotModelTurn = false;
   S.wrapRequested = false;
+  if (S.wrapTimer) { clearTimeout(S.wrapTimer); S.wrapTimer = null; }
+  S.userSpeaking = false;
   S.ended = false;
   S.muted = false;
   S.replaySegments = [];
@@ -1481,16 +1485,33 @@ function startCountdown(totalSeconds) {
     $("timer").classList.toggle("warn", left <= 30 && left > 0);
     if (left <= 0) {
       clearInterval(S.timer); S.timer = null;
-      if (!S.ended) { S.wrapRequested = true; setStatus("时间到，本次练习结束", "wrapping"); endSession(); }
+      if (!S.ended) requestWrapUp("time");
     }
   };
   tick();
   S.timer = setInterval(tick, 500);
 }
 
+function requestWrapUp(reason) {
+  if (S.ended || S.wrapTimer) return;
+  S.wrapRequested = true;
+  clearSilenceWatch();
+  clearTurnNudge();
+  const lead = reason === "time" ? "时间到，" : "";
+  const finish = () => { if (!S.ended) endSession(); };
+  if (S.aiSpeaking) {
+    setStatus(lead + "等 AI 说完这句就结束…", "wrapping");
+    suspendMicForAi();               // 不再收新话，让 AI 把当前这句说完
+  } else if (S.userSpeaking) {
+    setStatus(lead + "等你这句说完就结束…", "wrapping");
+  } else {
+    setStatus(lead + "本次练习结束", "wrapping");
+    setTimeout(finish, 250);
+  }
+  S.wrapTimer = setTimeout(finish, 30000); // 兜底：最多等 30 秒
+}
 function sendFarewell() {
-  // 不再让 AI 说道别语音：直接结束，避免卡死在等待回复
-  endSession();
+  requestWrapUp("user");
 }
 
 /* ================= 会话主流程 ================= */
@@ -1597,6 +1618,7 @@ function handleLiveEvent(r) {
     case LIVE_RESP.SPEECH_START: {
       clearTurnNudge();
       clearSilenceWatch();
+      S.userSpeaking = true;
       S.aiSpeaking = false;
       S.userLogged = false;
       setStatus("正在听你说…", "listening");
@@ -1609,6 +1631,7 @@ function handleLiveEvent(r) {
         if (S.activeBubble.el.textContent === "…") S.activeBubble.el.textContent = "🎤（语音已收到）";
         S.activeBubble = null;
       }
+      S.userSpeaking = false;
       flushUserSeg();
       if (!S.userLogged) S.turnLog.push({ who: "你", text: "（语音）" });
       S.userTurns++;
@@ -1696,6 +1719,7 @@ function handleLiveEvent(r) {
       S.turnHadOutputTx = false;
       removeActiveBubble();
       resumeMicAfterAi();
+      if (S.wrapRequested) { endSession(); break; }
       setStatus("你可以说了（直接开口即可）", "ready");
       break;
     }
@@ -1992,6 +2016,7 @@ function endSession() {
   if (S.ended) return;
   S.ended = true;
   clearInterval(S.timer);
+  if (S.wrapTimer) { clearTimeout(S.wrapTimer); S.wrapTimer = null; }
   clearSilenceWatch();
   flushUserSeg();
   flushAiSeg();
@@ -2119,8 +2144,7 @@ function bindEvents() {
   if (rb) rb.onclick = () => { rb.classList.add("hidden"); cleanupAfterFail(); startSession(); };
   $("btnEnd").onclick = () => {
     if (S.ended) return;
-    S.wrapRequested = true;
-    endSession();
+    requestWrapUp("user");
   };
   $("btnAgain").onclick = () => { startSession(); };
   const rp = $("btnReplay");
