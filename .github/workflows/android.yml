@@ -21,7 +21,14 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - uses: android-actions/setup-android@v3
+      # runner 自带 Android SDK，但许可证需显式接受，否则 sdkmanager 会卡在交互提示
+      - name: Accept Android SDK licenses and install platform
+        run: |
+          SDK="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"
+          SM="$(ls -d "$SDK"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | tail -1)"
+          echo "sdkmanager: $SM"
+          yes | "$SM" --licenses > /dev/null 2>&1 || true
+          yes | "$SM" "platform-tools" "platforms;android-36" > /dev/null 2>&1 || true
 
       - name: Install JS deps
         run: npm ci

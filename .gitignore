@@ -13,6 +13,9 @@ android/app/src/main/assets/public/
 android/app/src/main/assets/capacitor.config.json
 android/app/src/main/assets/capacitor.plugins.json
 
+# 日志
+*.log
+
 # 系统/杂项
 .DS_Store
 docs/*.png
