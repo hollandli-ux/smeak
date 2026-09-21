@@ -592,7 +592,8 @@ function buildSessionWavBlob(segs) {
     const f = seg.spk === "user" ? upsampleAudio(raw, 16000, SR) : raw;
     let peak = 0;
     for (let i = 0; i < f.length; i++) { const a = Math.abs(f[i]); if (a > peak) peak = a; }
-    const gain = peak > 0.01 ? Math.min(5, 0.85 / peak) : 1; // 录音太小就放大
+    const cap = seg.spk === "user" ? 25 : 6;              // 你的声音往往更小，多放大
+    const gain = peak > 0.01 ? Math.min(cap, 0.9 / peak) : 1; // 录音太小就放大
     const n = Math.min(f.length, MAX - total);
     const i16 = new Int16Array(n + GAP);
     for (let i = 0; i < n; i++) {
